@@ -1,0 +1,36 @@
+- name: Setup Host
+  hosts: app
+  become: true
+
+  tasks:
+    - name: Создать пользователя deployer
+      user:
+        name: "deployer"
+        state: present
+        shell: /bin/bash
+        append: yes
+        groups: sudo
+
+    - name: Разрешить deployer sudo без пароля
+      ansible.builtin.copy:
+        dest: /etc/sudoers.d/deployer
+        owner: root
+        group: root
+        mode: "0440"
+        content: |
+          deployer ALL=(ALL:ALL) NOPASSWD: ALL
+        validate: "/usr/sbin/visudo -cf %s"
+
+    - name: Установить Docker и Compose
+      package:
+        name:
+          - docker.io
+          - docker-compose-v2
+        state: present
+        update_cache: true
+    
+    - name: Запустить Docker и включить автозапуск
+      service:
+        name: docker
+        state: started
+        enabled: true
